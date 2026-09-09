@@ -7,7 +7,7 @@ function TestCases() {
   const navigate = useNavigate();
 
   const handleRunTestCase = (candidateData) => {
-    navigate('/analyze', { state: { candidateData } });
+    navigate('/review', { state: { candidateData } });
   };
 
   const getIconForCase = (id) => {
@@ -15,7 +15,9 @@ function TestCases() {
       case 'normal': return <CheckCircle2 color="var(--risk-low)" size={24} />;
       case 'skill_mismatch': return <AlertTriangle color="var(--risk-medium)" size={24} />;
       case 'prompting': return <Users color="var(--risk-medium)" size={24} />;
+      case 'av_anomaly': return <AlertTriangle color="var(--risk-high)" size={24} />;
       case 'multiple_inconsistencies': return <AlertTriangle color="var(--risk-high)" size={24} />;
+      case 'poor_quality': return <Users color="var(--text-muted)" size={24} />;
       case 'edge_case': return <ShieldCheck color="var(--risk-low)" size={24} />;
       default: return <Users size={24} />;
     }
@@ -47,17 +49,10 @@ function TestCases() {
                 <span className="label">Claimed Exp:</span>
                 <span className="value">{tc.candidate.experience}</span>
               </div>
-              <div className="detail-row">
-                <span className="label">Observation:</span>
-                <span className="value">{tc.observations.prompting !== 'None' ? `Prompting: ${tc.observations.prompting}` : tc.observations.consistency}</span>
-              </div>
             </div>
 
-            <button 
-              className="btn btn-primary run-btn"
-              onClick={() => handleRunTestCase(tc)}
-            >
-              <Play size={16} /> LOAD TEST CASE
+            <button className="btn btn-primary run-btn" onClick={() => handleRunTestCase(tc)}>
+              <Play size={16} /> LOAD SCENARIO
             </button>
           </div>
         ))}

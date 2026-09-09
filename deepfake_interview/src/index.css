@@ -184,3 +184,36 @@ label {
   font-size: 0.875rem;
   font-weight: 500;
 }
+
+@media print {
+  body {
+    background: white;
+    color: black;
+  }
+  
+  * {
+    color: black !important;
+    text-shadow: none !important;
+    box-shadow: none !important;
+    background: transparent !important;
+  }
+
+  .navbar, .back-nav, .action-buttons, .timeline-header-row .prototype-label {
+    display: none !important;
+  }
+  
+  .glass-panel {
+    border: 1px solid #ddd !important;
+    margin-bottom: 20px !important;
+    break-inside: avoid;
+  }
+  
+  .results-grid {
+    display: block !important;
+  }
+  
+  .circular-score {
+    width: 100px;
+    height: 100px;
+  }
+}

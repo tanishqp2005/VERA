@@ -1,0 +1,267 @@
+.investigation-page {
+  padding-top: 2rem;
+  padding-bottom: 4rem;
+}
+
+.investigation-header {
+  margin-bottom: 2rem;
+  border-bottom: 1px solid var(--border-color);
+  padding-bottom: 1.5rem;
+}
+
+.investigation-header h1 {
+  font-size: 2.25rem;
+  margin: 0;
+}
+
+.investigation-layout {
+  display: grid;
+  grid-template-columns: 2fr 1fr;
+  gap: 2rem;
+}
+
+.main-console {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+.video-player-mock {
+  padding: 1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.video-screen {
+  width: 100%;
+  aspect-ratio: 16/9;
+  background: #000;
+  border-radius: 8px;
+  position: relative;
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.mock-video-content {
+  width: 100%;
+  height: 100%;
+  position: relative;
+  background: radial-gradient(circle at center, #1a2942 0%, #050b14 100%);
+}
+
+.mock-face {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 120px;
+  height: 150px;
+  background: rgba(255, 255, 255, 0.05);
+  border-radius: 50% 50% 40% 40%;
+  border: 1px dashed rgba(255, 255, 255, 0.1);
+}
+
+.mock-face::before {
+  content: '';
+  position: absolute;
+  top: 40px;
+  left: 25px;
+  width: 20px;
+  height: 10px;
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 50%;
+}
+
+.mock-face::after {
+  content: '';
+  position: absolute;
+  top: 40px;
+  right: 25px;
+  width: 20px;
+  height: 10px;
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 50%;
+}
+
+.video-overlay {
+  position: absolute;
+  top: 1rem;
+  left: 1rem;
+  right: 1rem;
+  display: flex;
+  justify-content: space-between;
+}
+
+.overlay-timestamp {
+  font-family: var(--font-mono);
+  background: rgba(0, 0, 0, 0.5);
+  padding: 0.25rem 0.5rem;
+  border-radius: 4px;
+}
+
+.overlay-status {
+  font-family: var(--font-mono);
+  font-weight: 700;
+}
+
+.video-controls {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  padding: 0.5rem;
+  background: rgba(0, 0, 0, 0.3);
+  border-radius: 8px;
+}
+
+.play-btn {
+  color: white;
+}
+
+.timeline-scrubber {
+  flex: 1;
+  padding: 0 1rem;
+}
+
+.scrubber-track {
+  width: 100%;
+  height: 6px;
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 3px;
+  position: relative;
+  cursor: pointer;
+}
+
+.scrubber-fill {
+  height: 100%;
+  background: var(--primary);
+  border-radius: 3px;
+  pointer-events: none;
+}
+
+.scrubber-marker {
+  position: absolute;
+  top: -4px;
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  transform: translateX(-50%);
+  cursor: pointer;
+  z-index: 10;
+  border: 2px solid var(--bg-panel);
+}
+
+.marker-danger { background: var(--risk-high); box-shadow: 0 0 5px var(--risk-high); }
+.marker-warning { background: var(--risk-medium); box-shadow: 0 0 5px var(--risk-medium); }
+
+.active-anomaly-panel {
+  padding: 1.5rem;
+}
+
+.anomaly-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1.5rem;
+}
+
+.anomaly-header h3 {
+  margin: 0;
+  font-size: 1.25rem;
+}
+
+.anomaly-nav {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.anomaly-counter {
+  font-family: var(--font-mono);
+  font-size: 0.9rem;
+  color: var(--text-muted);
+}
+
+.anomaly-card {
+  display: flex;
+  gap: 1.5rem;
+  padding: 1.5rem;
+  border-radius: 8px;
+  background: rgba(0, 0, 0, 0.2);
+  border-left: 4px solid;
+}
+
+.anomaly-card.severity-danger { border-color: var(--risk-high); }
+.anomaly-card.severity-warning { border-color: var(--risk-medium); }
+
+.anomaly-icon {
+  color: inherit;
+}
+
+.severity-danger .anomaly-icon { color: var(--risk-high); }
+.severity-warning .anomaly-icon { color: var(--risk-medium); }
+
+.anomaly-details {
+  flex: 1;
+}
+
+.anomaly-time {
+  font-family: var(--font-mono);
+  font-size: 0.85rem;
+  color: var(--text-muted);
+  margin-bottom: 0.5rem;
+}
+
+.anomaly-details h4 {
+  font-size: 1.1rem;
+  margin-bottom: 0.5rem;
+}
+
+.severity-danger h4 { color: var(--risk-high); }
+.severity-warning h4 { color: var(--risk-medium); }
+
+.anomaly-details p {
+  color: var(--text-main);
+  margin-bottom: 1rem;
+  font-size: 0.95rem;
+}
+
+.anomaly-confidence {
+  display: inline-block;
+  background: rgba(255, 255, 255, 0.05);
+  padding: 0.25rem 0.5rem;
+  border-radius: 4px;
+  font-size: 0.8rem;
+  color: var(--text-muted);
+}
+
+.sidebar-console {
+  display: flex;
+  flex-direction: column;
+}
+
+.transcript-wrapper {
+  padding: 1.5rem;
+  display: flex;
+  flex-direction: column;
+  height: 600px;
+}
+
+.panel-title {
+  margin-bottom: 1rem;
+  padding-bottom: 1rem;
+  border-bottom: 1px solid var(--border-color);
+}
+
+.transcript-container {
+  flex: 1;
+  overflow: hidden;
+}
+
+@media (max-width: 992px) {
+  .investigation-layout {
+    grid-template-columns: 1fr;
+  }
+}

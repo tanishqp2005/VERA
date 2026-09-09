@@ -1,0 +1,56 @@
+.create-interview-page {
+  padding-top: 2rem;
+  padding-bottom: 4rem;
+  max-width: 800px;
+}
+
+.create-form {
+  padding: 2.5rem;
+}
+
+.form-actions {
+  margin-top: 2rem;
+  display: flex;
+  justify-content: flex-end;
+  border-top: 1px solid var(--border-color);
+  padding-top: 1.5rem;
+}
+
+.success-panel {
+  padding: 4rem 2rem;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+}
+
+.success-icon {
+  color: var(--risk-low);
+  margin-bottom: 1.5rem;
+}
+
+.pulse-green-icon {
+  animation: pulse-green-glow 2s infinite alternate;
+}
+
+@keyframes pulse-green-glow {
+  from { filter: drop-shadow(0 0 10px rgba(16, 185, 129, 0.4)); transform: scale(1); }
+  to { filter: drop-shadow(0 0 25px rgba(16, 185, 129, 0.8)); transform: scale(1.1); }
+}
+
+.success-panel h2 {
+  font-size: 2rem;
+  margin-bottom: 0.5rem;
+  letter-spacing: 2px;
+}
+
+.success-panel p {
+  color: var(--text-muted);
+  margin-bottom: 3rem;
+  font-size: 1.1rem;
+}
+
+.upload-prompt {
+  width: 100%;
+  max-width: 400px;
+}
