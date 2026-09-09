@@ -1,0 +1,240 @@
+.home-page {
+  padding-top: 4rem;
+  padding-bottom: 4rem;
+}
+
+.hero-section {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 4rem;
+  align-items: center;
+  min-height: 70vh;
+}
+
+.badge {
+  display: inline-block;
+  background: rgba(43, 123, 237, 0.1);
+  color: var(--primary);
+  border: 1px solid rgba(43, 123, 237, 0.3);
+  padding: 0.25rem 0.75rem;
+  border-radius: 50px;
+  font-size: 0.8rem;
+  font-weight: 600;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  margin-bottom: 1.5rem;
+}
+
+.hero-title {
+  font-size: 3.5rem;
+  line-height: 1.1;
+  margin-bottom: 1.5rem;
+}
+
+.hero-title .highlight {
+  color: var(--secondary);
+  text-shadow: 0 0 20px rgba(0, 210, 255, 0.3);
+}
+
+.hero-subtitle {
+  font-size: 1.1rem;
+  color: var(--text-muted);
+  margin-bottom: 2.5rem;
+  max-width: 500px;
+}
+
+.hero-actions {
+  display: flex;
+  gap: 1rem;
+}
+
+/* Visual Section */
+.hero-visual {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+}
+
+.integrity-monitor {
+  position: relative;
+  width: 400px;
+  height: 400px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.monitor-center {
+  position: relative;
+  width: 100px;
+  height: 100px;
+  background: var(--bg-panel);
+  border: 2px solid var(--primary);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 10;
+  box-shadow: 0 0 30px var(--primary-glow);
+}
+
+.center-icon {
+  color: var(--secondary);
+}
+
+.pulse-rings {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  z-index: 1;
+}
+
+.ring {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  border-radius: 50%;
+  border: 1px solid var(--border-highlight);
+  opacity: 0;
+  animation: ripple 4s linear infinite;
+}
+
+.ring-1 { width: 150px; height: 150px; animation-delay: 0s; }
+.ring-2 { width: 250px; height: 250px; animation-delay: 1.33s; }
+.ring-3 { width: 350px; height: 350px; animation-delay: 2.66s; }
+
+@keyframes ripple {
+  0% { transform: translate(-50%, -50%) scale(0.8); opacity: 0.8; }
+  100% { transform: translate(-50%, -50%) scale(2); opacity: 0; }
+}
+
+.nodes {
+  position: absolute;
+  width: 100%;
+  height: 100%;
+  z-index: 5;
+}
+
+.node {
+  position: absolute;
+  padding: 0.5rem 1rem;
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  border-radius: 8px;
+  white-space: nowrap;
+}
+
+.node-icon {
+  color: var(--secondary);
+}
+
+.node-info {
+  display: flex;
+  flex-direction: column;
+}
+
+.node-label {
+  font-size: 0.65rem;
+  color: var(--text-muted);
+  letter-spacing: 0.5px;
+}
+
+.node-value {
+  font-size: 0.9rem;
+  font-weight: 600;
+  font-family: var(--font-mono);
+}
+
+.text-safe { color: var(--risk-low); }
+.text-warn { color: var(--risk-medium); }
+.text-danger { color: var(--risk-high); }
+
+.node-1 { top: 10%; left: 10%; }
+.node-2 { top: 10%; right: 10%; }
+.node-3 { bottom: 15%; left: 5%; }
+.node-4 { bottom: 15%; right: 5%; }
+
+/* System Status Panel */
+.system-status-panel {
+  width: 100%;
+  max-width: 320px;
+  padding: 1.5rem;
+  margin-top: 2rem;
+}
+
+.panel-header {
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--text-muted);
+  margin-bottom: 1rem;
+  letter-spacing: 1px;
+  border-bottom: 1px solid var(--border-color);
+  padding-bottom: 0.5rem;
+}
+
+.status-row {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 0.75rem;
+  font-size: 0.85rem;
+  font-family: var(--font-mono);
+}
+
+.status-row:last-child {
+  margin-bottom: 0;
+}
+
+.highlight-row {
+  margin-top: 1rem;
+  padding-top: 1rem;
+  border-top: 1px dashed var(--border-color);
+  font-weight: bold;
+}
+
+.privacy-notice {
+  text-align: center;
+  margin-top: 5rem;
+  font-size: 0.8rem;
+  color: var(--text-muted);
+  opacity: 0.7;
+}
+
+@media (max-width: 992px) {
+  .hero-section {
+    grid-template-columns: 1fr;
+    text-align: center;
+  }
+  
+  .hero-subtitle {
+    margin: 0 auto 2.5rem auto;
+  }
+  
+  .hero-actions {
+    justify-content: center;
+  }
+}
+
+@media (max-width: 500px) {
+  .hero-title {
+    font-size: 2.5rem;
+  }
+  
+  .integrity-monitor {
+    width: 300px;
+    height: 300px;
+  }
+  
+  .node {
+    padding: 0.4rem 0.6rem;
+  }
+  
+  .node-1 { top: 0%; left: 0%; }
+  .node-2 { top: 0%; right: 0%; }
+  .node-3 { bottom: 0%; left: 0%; }
+  .node-4 { bottom: 0%; right: 0%; }
+}

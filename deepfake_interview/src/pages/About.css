@@ -1,0 +1,120 @@
+.about-page {
+  padding-top: 2rem;
+  padding-bottom: 4rem;
+}
+
+.architecture-steps {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-top: 3rem;
+  margin-bottom: 4rem;
+  position: relative;
+}
+
+.step-card {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  padding: 2rem 1.5rem;
+  position: relative;
+  z-index: 2;
+  min-height: 250px;
+}
+
+.step-number {
+  position: absolute;
+  top: -15px;
+  left: -15px;
+  font-size: 3rem;
+  font-weight: 800;
+  color: rgba(255, 255, 255, 0.05);
+  line-height: 1;
+}
+
+.step-icon {
+  color: var(--secondary);
+  margin-bottom: 1.5rem;
+  background: rgba(0, 210, 255, 0.1);
+  padding: 1rem;
+  border-radius: 50%;
+  box-shadow: 0 0 20px rgba(0, 210, 255, 0.1);
+}
+
+.step-card h3 {
+  font-size: 1.1rem;
+  margin-bottom: 1rem;
+  letter-spacing: 1px;
+}
+
+.step-card p {
+  font-size: 0.9rem;
+  color: var(--text-muted);
+}
+
+.step-connector {
+  flex: 0.2;
+  height: 2px;
+  background: var(--border-color);
+  margin-top: 5rem;
+  position: relative;
+  z-index: 1;
+}
+
+.step-connector::after {
+  content: '';
+  position: absolute;
+  right: -5px;
+  top: -4px;
+  width: 10px;
+  height: 10px;
+  border-top: 2px solid var(--border-color);
+  border-right: 2px solid var(--border-color);
+  transform: rotate(45deg);
+}
+
+.human-review-section {
+  padding: 3rem;
+  text-align: center;
+  max-width: 800px;
+  margin: 0 auto;
+  border-top: 2px solid var(--risk-medium);
+}
+
+.human-review-section h2 {
+  color: var(--risk-medium);
+  margin-bottom: 1.5rem;
+  font-size: 1.8rem;
+}
+
+.highlight-text {
+  font-size: 1.25rem;
+  font-weight: 500;
+  color: var(--text-main);
+  margin-bottom: 1.5rem;
+}
+
+.human-review-section p:not(.highlight-text) {
+  color: var(--text-muted);
+  line-height: 1.6;
+}
+
+@media (max-width: 992px) {
+  .architecture-steps {
+    flex-direction: column;
+    align-items: center;
+    gap: 2rem;
+  }
+  
+  .step-card {
+    width: 100%;
+    max-width: 400px;
+    min-height: auto;
+  }
+  
+  .step-connector {
+    display: none;
+  }
+}
