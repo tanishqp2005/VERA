@@ -1,23 +1,24 @@
 /**
- * Central Risk Engine
- * Consumes modular analysis signals to generate a final 0-100 risk score, 
- * risk level, explainable reasons, and a unified evidence timeline.
+ * Central VERA Risk Engine
+ * Consumes modular interview signals to generate an explainable 0-100 integrity risk score,
+ * risk level, specific reasons, subscores, and a unified evidence timeline.
  */
-export function calculateRisk(analysisData) {
+
+export function calculateRisk(analysisData = {}) {
   const {
-    candidate,
-    transcript,
-    visualSignals,
-    audioVideoSignals,
-    assistanceSignals,
-    sessionEvents,
-    evidenceQuality
+    candidate = {},
+    transcript = [],
+    visualSignals = null,
+    audioVideoSignals = null,
+    assistanceSignals = null,
+    sessionEvents = [],
+    evidenceQuality = null
   } = analysisData;
 
   let score = 0;
-  let reasons = [];
-  let timeline = [];
-  let subScores = {
+  const reasons = [];
+  const timeline = [];
+  const subScores = {
     profileConsistency: 100,
     technicalDepth: 100,
     answerConsistency: 100,
@@ -27,7 +28,7 @@ export function calculateRisk(analysisData) {
 
   const addTimelineEvent = (timestamp, type, severity, description, riskContribution = 0) => {
     timeline.push({
-      timestamp,
+      timestamp: timestamp || "00:00:00",
       type,
       severity, // 'info', 'warning', 'danger', 'success'
       description,
@@ -35,136 +36,200 @@ export function calculateRisk(analysisData) {
     });
   };
 
-  // Add initial timeline events
-  addTimelineEvent("00:00:00", "PROFILE LOADED", "info", `Candidate profile loaded claiming ${candidate.experience} experience`);
+  // 1. Initial Timeline Baseline
+  const expClaim = candidate.experience || 'Not specified';
+  addTimelineEvent(
+    "00:00:00",
+    "PROFILE INITIALIZED",
+    "info",
+    `Candidate profile loaded for ${candidate.name || 'Candidate'} claiming ${expClaim} level.`
+  );
 
-  // --- Rule 1: Technical Depth & Profile Consistency ---
-  // In a real system, technicalAnalysis.js would output this. Here we infer from the transcript answers vs claimed level.
-  // We'll simulate by checking the candidate's answers in the transcript for brevity (in reality, NLP).
-  let technicalDepthWeak = false;
-  let technicalDepthStrong = false;
+  // 2. Rule: Technical Depth & Profile Consistency (NLP & Keyword Analysis)
+  const candidateAnswers = Array.isArray(transcript)
+    ? transcript.filter(t => t.speaker === 'CANDIDATE')
+    : [];
+
+  const candidateText = candidateAnswers.map(t => t.text || '').join(' ').toLowerCase();
+  const totalWords = candidateText.split(/\s+/).filter(Boolean).length;
+  const avgWordsPerAnswer = candidateAnswers.length > 0 ? totalWords / candidateAnswers.length : 0;
+
+  // Check declared skills against candidate responses
+  const declaredSkills = Array.isArray(candidate.skills) ? candidate.skills : [];
+  let skillsMentionedCount = 0;
   
-  if (transcript && transcript.length > 0) {
-    // Very basic keyword heuristic for the simulation
-    const combinedAnswers = transcript.filter(t => t.speaker === 'CANDIDATE').map(t => t.text.toLowerCase()).join(" ");
-    if (combinedAnswers.includes("train to go different places") || combinedAnswers.includes("too big for the computer") || combinedAnswers.includes("goes backwards") || combinedAnswers.includes("both forests")) {
-      technicalDepthWeak = true;
+  declaredSkills.forEach(skill => {
+    if (skill && candidateText.includes(skill.toLowerCase())) {
+      skillsMentionedCount++;
     }
-    if (combinedAnswers.includes("dictionary") || combinedAnswers.includes("fillna") || combinedAnswers.includes("iqr method")) {
-      technicalDepthStrong = true;
+  });
+
+  const isSenior = candidate.experience === "Advanced" || candidate.experience === "Expert";
+  const isBeginner = candidate.experience === "Beginner";
+
+  if (candidateAnswers.length > 0) {
+    if (isSenior) {
+      // Expect substantive answers and demonstrated domain coverage
+      const shallowCoverage = declaredSkills.length > 0 && (skillsMentionedCount / declaredSkills.length < 0.3);
+      const overlyBrief = avgWordsPerAnswer < 15;
+
+      if (overlyBrief || shallowCoverage) {
+        score += 25;
+        subScores.technicalDepth = Math.max(20, subScores.technicalDepth - 55);
+        subScores.profileConsistency = Math.max(30, subScores.profileConsistency - 45);
+        reasons.push({
+          title: "Technical Depth Inconsistency",
+          description: `Claimed ${candidate.experience} level in ${candidate.role || 'role'}, but answers lacked expected technical depth and domain vocabulary.`
+        });
+        const firstTimestamp = candidateAnswers[0]?.timestamp || "00:03:00";
+        addTimelineEvent(firstTimestamp, "TECHNICAL MISMATCH", "danger", "Superficial technical depth observed relative to claimed seniority", 20);
+      } else if (avgWordsPerAnswer >= 30) {
+        subScores.technicalDepth = 95;
+        addTimelineEvent("00:04:00", "TECHNICAL DEPTH VERIFIED", "success", "Substantive technical responses aligned with experience level");
+      }
+    } else if (isBeginner) {
+      if (avgWordsPerAnswer >= 25 && skillsMentionedCount > 0) {
+        subScores.technicalDepth = 98;
+        addTimelineEvent("00:03:00", "STRONG ANSWER", "success", "Candidate answers clearly demonstrated core foundational knowledge");
+      }
     }
+  } else {
+    // No transcript available
+    subScores.profileConsistency -= 20;
+    subScores.technicalDepth -= 20;
   }
 
-  if (candidate.experience === "Advanced" || candidate.experience === "Expert") {
-    if (technicalDepthWeak) {
-      score += 25;
-      subScores.technicalDepth -= 60;
-      subScores.profileConsistency -= 40;
-      reasons.push({
-        title: "Technical depth inconsistency",
-        description: `The claimed ${candidate.experience} expertise level is not fully supported by the interview answers.`
-      });
-      addTimelineEvent("00:05:00", "TECHNICAL MISMATCH", "danger", "Question answered with weak technical depth despite claiming expertise", 15);
-    } else if (!technicalDepthStrong) {
-      score += 10;
-      subScores.technicalDepth -= 20;
-    }
-  } else if (candidate.experience === "Beginner" && technicalDepthStrong) {
-    subScores.technicalDepth = 95; 
-    addTimelineEvent("00:03:00", "STRONG ANSWER", "success", "Strong technical answers provided (exceeds claimed beginner level)");
-  }
-
-  // --- Rule 2: Scripting & External Assistance ---
+  // 3. Rule: Scripting & External Assistance Signals
   if (assistanceSignals) {
-    if (assistanceSignals.overall === "MODERATE") {
-      score += 15;
-      subScores.assistanceSignal -= 40;
-      reasons.push({
-        title: "Possible external assistance",
-        description: "Interview observations indicate a possible prompting pattern."
-      });
-      addTimelineEvent("00:08:00", "ASSISTANCE SIGNAL", "warning", "Possible prompting signal detected", 15);
-    } else if (assistanceSignals.overall === "STRONG") {
+    if (assistanceSignals.overall === "STRONG") {
       score += 25;
-      subScores.assistanceSignal -= 80;
+      subScores.assistanceSignal = Math.max(10, subScores.assistanceSignal - 70);
       reasons.push({
-        title: "Strong external assistance signal",
-        description: "Significant indicators of external prompting or scripted responses detected."
+        title: "Strong External Assistance Signal",
+        description: "Response latency patterns and delivery indicate candidate may be reading from a script or receiving external prompts."
       });
-      addTimelineEvent("00:11:00", "ASSISTANCE SIGNAL", "danger", "Strong prompting signal detected during responses", 25);
+      addTimelineEvent("00:08:30", "ASSISTANCE SIGNAL", "danger", "Strong external prompting indicator detected during responses", 25);
+    } else if (assistanceSignals.overall === "MODERATE") {
+      score += 15;
+      subScores.assistanceSignal = Math.max(40, subScores.assistanceSignal - 40);
+      reasons.push({
+        title: "Possible External Assistance",
+        description: "Delivery cadence and pause characteristics suggest potential external prompting."
+      });
+      addTimelineEvent("00:07:15", "ASSISTANCE SIGNAL", "warning", "Unnatural response delivery pattern detected", 15);
     }
 
     if (assistanceSignals.scriptedPattern) {
       score += 10;
-      subScores.answerConsistency -= 30;
-      if (!reasons.find(r => r.title.includes("assistance"))) {
-         reasons.push({
-           title: "Highly scripted responses",
-           description: "Candidate answers appear highly rehearsed or read from a script."
-         });
+      subScores.answerConsistency = Math.max(30, subScores.answerConsistency - 35);
+      if (!reasons.find(r => r.title.includes("Scripted") || r.title.includes("Assistance"))) {
+        reasons.push({
+          title: "Scripted Response Delivery",
+          description: "Answers exhibit uniform textbook sentence structure and robotic delivery."
+        });
+      }
+    }
+
+    if (assistanceSignals.longPauses && assistanceSignals.longPauses >= 3) {
+      score += 8;
+      subScores.answerConsistency = Math.max(40, subScores.answerConsistency - 20);
+      addTimelineEvent("00:09:00", "RESPONSE DELAY", "warning", `Multiple anomalous pauses (${assistanceSignals.longPauses}) detected prior to rapid answers`, 8);
+    }
+  }
+
+  // 4. Rule: Session Monitor Events (Window focus loss, tab switching)
+  if (Array.isArray(sessionEvents) && sessionEvents.length > 0) {
+    let focusLostContribution = 0;
+    sessionEvents.forEach((event, idx) => {
+      const impact = event.type === "WINDOW FOCUS LOST" ? 12 : 8;
+      focusLostContribution += impact;
+      subScores.observationSignal = Math.max(10, subScores.observationSignal - 15);
+      addTimelineEvent(
+        event.timestamp || `00:0${idx + 2}:00`,
+        event.type || "SESSION ALERT",
+        "warning",
+        event.description || "Interview window lost focus. Candidate switched applications or browser tabs.",
+        impact
+      );
+    });
+
+    score += Math.min(30, focusLostContribution);
+    reasons.push({
+      title: "Session Integrity Alerts",
+      description: `Detected ${sessionEvents.length} instance(s) of window focus loss or browser tab switching during the interview.`
+    });
+  }
+
+  // 5. Rule: Visual Signals (Camera focus & Eye Contact)
+  if (visualSignals) {
+    if (visualSignals.status === "MODERATE SIGNAL" || (visualSignals.awayFromCamera && visualSignals.awayFromCamera > 30)) {
+      score += 10;
+      subScores.observationSignal = Math.max(25, subScores.observationSignal - 25);
+      reasons.push({
+        title: "Gaze / Focus Abnormality",
+        description: "Frequent periods of candidate looking away from the screen during question response phases."
+      });
+      addTimelineEvent("00:05:45", "VISUAL SIGNAL", "warning", visualSignals.message || "Frequent off-screen gaze detected", 10);
+    }
+  }
+
+  // 6. Rule: Audio/Video Synchronization & Lip-Sync Integrity (Deepfake Heuristic)
+  if (audioVideoSignals) {
+    const isAnomalous = audioVideoSignals.status === "POTENTIAL ANOMALY" || 
+                        (audioVideoSignals.consistency && audioVideoSignals.consistency < 70) ||
+                        (Array.isArray(audioVideoSignals.anomalies) && audioVideoSignals.anomalies.length > 0);
+
+    if (isAnomalous) {
+      score += 20;
+      subScores.observationSignal = Math.max(15, subScores.observationSignal - 40);
+      reasons.push({
+        title: "Audio-Visual Lip-Sync Mismatch",
+        description: "Potential synchronization discrepancy observed between audio speech levels and mouth movement."
+      });
+
+      if (Array.isArray(audioVideoSignals.anomalies) && audioVideoSignals.anomalies.length > 0) {
+        audioVideoSignals.anomalies.forEach((anomaly, aIdx) => {
+          addTimelineEvent(
+            anomaly.start || `00:1${aIdx}:00`,
+            "A/V LIP-SYNC MISMATCH",
+            "danger",
+            anomaly.description || "Speech audio detected while mouth movement was dormant, or vice versa.",
+            15
+          );
+        });
+      } else {
+        addTimelineEvent("00:12:00", "A/V LIP-SYNC MISMATCH", "danger", "Audio-video synchronization anomaly detected", 15);
       }
     }
   }
 
-  // --- Rule 3: Session Monitor Events (Focus lost) ---
-  if (sessionEvents && sessionEvents.length > 0) {
-    sessionEvents.forEach(event => {
-      score += 10;
-      subScores.observationSignal -= 10;
-      addTimelineEvent(event.timestamp, event.type, "warning", event.description, 10);
-    });
-    reasons.push({
-      title: "Session Integrity Alerts",
-      description: `Detected ${sessionEvents.length} instance(s) of window focus loss or interruptions.`
-    });
-  }
-
-  // --- Rule 4: Visual & AudioVideo Signals ---
-  if (visualSignals) {
-    if (visualSignals.status === "MODERATE SIGNAL") {
-      score += 5;
-      subScores.observationSignal -= 15;
-      addTimelineEvent("00:04:00", "VISUAL SIGNAL", "warning", visualSignals.message, 5);
-    }
-  }
-
-  if (audioVideoSignals && audioVideoSignals.status === "POTENTIAL ANOMALY") {
-    score += 15;
-    subScores.observationSignal -= 30;
-    reasons.push({
-      title: "Audio-visual anomaly",
-      description: "Potential lip-sync mismatch or synchronization anomaly detected."
-    });
-    audioVideoSignals.anomalies.forEach(anomaly => {
-      addTimelineEvent(anomaly.start, "A/V ANOMALY", "danger", anomaly.description, 12);
-    });
-  }
+  // 7. Calculate Final Evidence Quality
+  const calculatedEvidenceQuality = evidenceQuality || {
+    video: visualSignals?.status !== 'UNAVAILABLE' ? 92 : 30,
+    audio: 90,
+    faceVisibility: visualSignals?.cameraFacing || 90,
+    overall: visualSignals?.status !== 'UNAVAILABLE' ? 90 : 40,
+    message: visualSignals?.status !== 'UNAVAILABLE' ? "Sufficient evidence collected for analysis." : "Limited visual evidence recorded."
+  };
 
   // Cap score
-  score = Math.min(100, score);
-  addTimelineEvent("00:30:00", "ANALYSIS COMPLETE", "info", "Integrity risk calculated");
+  score = Math.min(100, Math.max(0, score));
 
   // Determine Level
   let level = "LOW RISK";
   if (score >= 60) level = "HIGH RISK";
   else if (score >= 30) level = "MEDIUM RISK";
 
-  // Default reasons if none generated but score is not 0
-  if (reasons.length === 0 && score > 0) {
-    if (score < 30) {
-       reasons.push({
-         title: "Minor inconsistencies",
-         description: "Some minor inconsistencies in technical depth or delivery, typical in normal interviews."
-       });
-    } else {
-       reasons.push({
-         title: "General Inconsistencies",
-         description: "Multiple minor signals accumulated during the interview."
-       });
+  // Default clarification if clean
+  if (reasons.length === 0) {
+    if (score === 0) {
+      addTimelineEvent("00:15:00", "SESSION COMPLETED", "success", "Interview concluded with zero anomalous signals detected.");
     }
+  } else {
+    addTimelineEvent("00:20:00", "ANALYSIS COMPLETE", "info", `VERA risk index calculated at ${score}/100.`);
   }
 
-  // Sort timeline chronologically by timestamp string
+  // Sort timeline chronologically
   timeline.sort((a, b) => a.timestamp.localeCompare(b.timestamp));
 
   return {
@@ -173,6 +238,6 @@ export function calculateRisk(analysisData) {
     reasons,
     timeline,
     subScores,
-    evidenceQuality: evidenceQuality || { overall: 100, message: "Standard" }
+    evidenceQuality: calculatedEvidenceQuality
   };
 }

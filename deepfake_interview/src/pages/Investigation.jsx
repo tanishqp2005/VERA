@@ -1,50 +1,122 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef, useMemo } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
-import { ArrowLeft, Play, Pause, FastForward, Rewind, AlertTriangle, ChevronRight, ChevronLeft } from 'lucide-react';
+import { ArrowLeft, Play, Pause, FastForward, Rewind, AlertTriangle, ChevronRight, ChevronLeft, Video, FileText } from 'lucide-react';
 import TranscriptPanel from '../components/TranscriptPanel';
 import './Investigation.css';
+
+// Convert "00:MM:SS" string to total seconds
+function timestampToSeconds(ts) {
+  if (!ts) return 0;
+  const parts = ts.split(':').map(Number);
+  if (parts.length === 3) return parts[0] * 3600 + parts[1] * 60 + parts[2];
+  if (parts.length === 2) return parts[0] * 60 + parts[1];
+  return 0;
+}
+
+// Convert seconds to "00:MM:SS"
+function secondsToTimestamp(secs) {
+  const s = Math.floor(secs);
+  const m = Math.floor(s / 60);
+  const remS = s % 60;
+  const h = Math.floor(m / 60);
+  const remM = m % 60;
+  return `${String(h).padStart(2, '0')}:${String(remM).padStart(2, '0')}:${String(remS).padStart(2, '0')}`;
+}
 
 function Investigation() {
   const location = useLocation();
   const navigate = useNavigate();
   const data = location.state;
 
-  const [activeAnomalyIndex, setActiveAnomalyIndex] = useState(0);
+  const videoRef = useRef(null);
   const [isPlaying, setIsPlaying] = useState(false);
-  const [currentTime, setCurrentTime] = useState("00:00:00");
+  const [videoDurationSec, setVideoDurationSec] = useState(180);
+
+  // Compute anomalies safely
+  const anomalies = useMemo(() => {
+    const timelineEvents = data?.timeline || [];
+    return timelineEvents.filter(ev => ev.severity === 'danger' || ev.severity === 'warning');
+  }, [data?.timeline]);
+
+  const [activeAnomalyIndex, setActiveAnomalyIndex] = useState(() => {
+    if (data?.activeTimestamp && anomalies.length > 0) {
+      const idx = anomalies.findIndex(a => a.timestamp === data.activeTimestamp);
+      return idx !== -1 ? idx : 0;
+    }
+    return 0;
+  });
+
+  const [currentTimeSec, setCurrentTimeSec] = useState(() => {
+    if (data?.activeTimestamp) {
+      return timestampToSeconds(data.activeTimestamp);
+    }
+    if (anomalies.length > 0) {
+      return timestampToSeconds(anomalies[0].timestamp);
+    }
+    return 0;
+  });
+
   const [activeTimestamp, setActiveTimestamp] = useState(data?.activeTimestamp || null);
 
+  // Navigate back if no candidate data
   useEffect(() => {
     if (!data || !data.candidate) {
       navigate('/analyze');
     }
   }, [data, navigate]);
 
-  if (!data) return null;
+  if (!data || !data.candidate) return null;
 
-  const anomalies = data.timeline.filter(ev => ev.severity === 'danger' || ev.severity === 'warning');
-  
-  // Set initial anomaly based on passed activeTimestamp
-  useEffect(() => {
-    if (activeTimestamp && anomalies.length > 0) {
-      const idx = anomalies.findIndex(a => a.timestamp === activeTimestamp);
-      if (idx !== -1) {
-        setActiveAnomalyIndex(idx);
-        setCurrentTime(activeTimestamp);
+  const activeAnomaly = anomalies[activeAnomalyIndex] || null;
+  const videoSource = data.videoUrl || null;
+
+  const togglePlay = () => {
+    if (videoRef.current) {
+      if (videoRef.current.paused) {
+        videoRef.current.play();
+        setIsPlaying(true);
+      } else {
+        videoRef.current.pause();
+        setIsPlaying(false);
       }
-    } else if (anomalies.length > 0) {
-      setCurrentTime(anomalies[0].timestamp);
+    } else {
+      setIsPlaying(!isPlaying);
     }
-  }, [activeTimestamp]);
+  };
 
-  const activeAnomaly = anomalies[activeAnomalyIndex];
+  const handleVideoTimeUpdate = () => {
+    if (videoRef.current) {
+      setCurrentTimeSec(videoRef.current.currentTime);
+      if (videoRef.current.duration) {
+        setVideoDurationSec(videoRef.current.duration);
+      }
+    }
+  };
+
+  const seekToSeconds = (secs) => {
+    const clamped = Math.max(0, Math.min(videoDurationSec, secs));
+    setCurrentTimeSec(clamped);
+    if (videoRef.current) {
+      videoRef.current.currentTime = clamped;
+    }
+  };
+
+  const handleTimestampClick = (ts) => {
+    setActiveTimestamp(ts);
+    const secs = timestampToSeconds(ts);
+    seekToSeconds(secs);
+
+    const idx = anomalies.findIndex(a => a.timestamp === ts);
+    if (idx !== -1) setActiveAnomalyIndex(idx);
+  };
 
   const handleNextAnomaly = () => {
     if (activeAnomalyIndex < anomalies.length - 1) {
       const nextIdx = activeAnomalyIndex + 1;
       setActiveAnomalyIndex(nextIdx);
-      setCurrentTime(anomalies[nextIdx].timestamp);
-      setActiveTimestamp(anomalies[nextIdx].timestamp);
+      const nextTs = anomalies[nextIdx].timestamp;
+      setActiveTimestamp(nextTs);
+      seekToSeconds(timestampToSeconds(nextTs));
     }
   };
 
@@ -52,18 +124,13 @@ function Investigation() {
     if (activeAnomalyIndex > 0) {
       const prevIdx = activeAnomalyIndex - 1;
       setActiveAnomalyIndex(prevIdx);
-      setCurrentTime(anomalies[prevIdx].timestamp);
-      setActiveTimestamp(anomalies[prevIdx].timestamp);
+      const prevTs = anomalies[prevIdx].timestamp;
+      setActiveTimestamp(prevTs);
+      seekToSeconds(timestampToSeconds(prevTs));
     }
   };
 
-  const handleTimestampClick = (ts) => {
-    setCurrentTime(ts);
-    setActiveTimestamp(ts);
-    // Find closest anomaly
-    const idx = anomalies.findIndex(a => a.timestamp === ts);
-    if (idx !== -1) setActiveAnomalyIndex(idx);
-  };
+  const progressPercent = videoDurationSec > 0 ? (currentTimeSec / videoDurationSec) * 100 : 0;
 
   return (
     <div className="investigation-page container">
@@ -74,48 +141,76 @@ function Investigation() {
       </div>
 
       <header className="investigation-header">
-        <div className="header-subtitle">INVESTIGATION CONSOLE</div>
-        <h1>Evidence Review: {data.candidate.name}</h1>
+        <div className="header-subtitle">FORENSIC INVESTIGATION CONSOLE</div>
+        <h1>Evidence Review: {data.candidate.name} <span className="text-muted text-sm mono">({data.candidate.id})</span></h1>
       </header>
 
       <div className="investigation-layout">
-        
-        {/* Main Video Area */}
+        {/* Main Video / Timeline Player */}
         <div className="main-console">
           <div className="video-player-mock glass-panel">
             <div className="video-screen">
-              <div className="mock-video-content">
-                <div className="mock-face"></div>
-                <div className="video-overlay">
-                  <div className="overlay-timestamp">{currentTime}</div>
-                  <div className="overlay-status text-safe">● REC</div>
+              {videoSource ? (
+                <video
+                  ref={videoRef}
+                  src={videoSource}
+                  className="investigation-actual-video"
+                  onTimeUpdate={handleVideoTimeUpdate}
+                  onLoadedMetadata={(e) => setVideoDurationSec(e.target.duration || 180)}
+                  onPlay={() => setIsPlaying(true)}
+                  onPause={() => setIsPlaying(false)}
+                  style={{ width: '100%', height: '100%', objectFit: 'contain', background: '#000' }}
+                />
+              ) : (
+                <div className="mock-video-content" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}>
+                  <Video size={48} className="text-secondary mb-2" style={{ opacity: 0.7 }} />
+                  <p className="text-muted text-sm">Synthetic Evidence Timeline Playback</p>
+                  <p className="mono text-xs text-muted">Use timeline markers to jump between detected anomaly events</p>
+                </div>
+              )}
+              
+              <div className="video-overlay">
+                <div className="overlay-timestamp mono">{secondsToTimestamp(currentTimeSec)}</div>
+                <div className="overlay-status text-safe">
+                  {isPlaying ? '▶ PLAYING' : '❚❚ PAUSED'}
                 </div>
               </div>
             </div>
             
             <div className="video-controls">
-              <button className="btn-icon" onClick={() => {}}><Rewind size={20} /></button>
-              <button className="btn-icon play-btn" onClick={() => setIsPlaying(!isPlaying)}>
+              <button className="btn-icon" onClick={() => seekToSeconds(currentTimeSec - 5)} title="Rewind 5s">
+                <Rewind size={20} />
+              </button>
+              <button className="btn-icon play-btn" onClick={togglePlay} aria-label={isPlaying ? "Pause" : "Play"}>
                 {isPlaying ? <Pause size={24} /> : <Play size={24} />}
               </button>
-              <button className="btn-icon" onClick={() => {}}><FastForward size={20} /></button>
+              <button className="btn-icon" onClick={() => seekToSeconds(currentTimeSec + 5)} title="Fast forward 5s">
+                <FastForward size={20} />
+              </button>
               
-              <div className="timeline-scrubber">
+              <div className="timeline-scrubber" onClick={(e) => {
+                const rect = e.currentTarget.getBoundingClientRect();
+                const clickX = e.clientX - rect.left;
+                const ratio = Math.max(0, Math.min(1, clickX / rect.width));
+                seekToSeconds(ratio * videoDurationSec);
+              }}>
                 <div className="scrubber-track">
-                  <div className="scrubber-fill" style={{ width: '45%' }}></div>
+                  <div className="scrubber-fill" style={{ width: `${progressPercent}%` }}></div>
                   
                   {/* Mark anomalies on scrubber */}
                   {anomalies.map((a, i) => {
-                    // Fake percentage calculation based on timestamp
-                    const min = parseInt(a.timestamp.substring(3, 5));
-                    const pct = Math.min(100, (min / 30) * 100);
+                    const eventSec = timestampToSeconds(a.timestamp);
+                    const pct = Math.min(100, (eventSec / (videoDurationSec || 180)) * 100);
                     return (
                       <div 
                         key={i} 
                         className={`scrubber-marker ${a.severity === 'danger' ? 'marker-danger' : 'marker-warning'}`}
                         style={{ left: `${pct}%` }}
-                        onClick={() => handleTimestampClick(a.timestamp)}
-                        title={a.type}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleTimestampClick(a.timestamp);
+                        }}
+                        title={`${a.type} at ${a.timestamp}`}
                       ></div>
                     );
                   })}
@@ -145,16 +240,20 @@ function Investigation() {
                     <AlertTriangle size={24} />
                   </div>
                   <div className="anomaly-details">
-                    <div className="anomaly-time">{activeAnomaly.timestamp}</div>
+                    <div className="anomaly-time mono">{activeAnomaly.timestamp}</div>
                     <h4>{activeAnomaly.type}</h4>
                     <p>{activeAnomaly.description}</p>
-                    <div className="anomaly-confidence">Confidence: {80 + Math.floor(Math.random() * 15)}%</div>
+                    {activeAnomaly.riskContribution > 0 && (
+                      <div className="anomaly-confidence text-danger font-medium mt-1">
+                        Risk impact: +{activeAnomaly.riskContribution}
+                      </div>
+                    )}
                   </div>
                 </div>
               </>
             ) : (
               <div className="no-anomalies text-muted text-center py-4">
-                No major anomalies to investigate.
+                No major anomalies flagged for this interview.
               </div>
             )}
           </div>
@@ -163,7 +262,9 @@ function Investigation() {
         {/* Sidebar Transcript Area */}
         <div className="sidebar-console">
           <div className="glass-panel transcript-wrapper">
-            <h3 className="panel-title">Synchronized Transcript</h3>
+            <h3 className="panel-title" style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+              <FileText size={18} /> Synchronized Transcript
+            </h3>
             <div className="transcript-container">
               <TranscriptPanel 
                 transcript={data.transcript} 
@@ -173,7 +274,6 @@ function Investigation() {
             </div>
           </div>
         </div>
-
       </div>
     </div>
   );

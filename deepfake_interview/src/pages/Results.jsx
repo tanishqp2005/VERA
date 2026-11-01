@@ -3,36 +3,25 @@ import { useLocation, useNavigate } from 'react-router-dom';
 import { calculateRisk } from '../logic/riskEngine';
 import SkillMatrix from '../components/SkillMatrix';
 import FollowUpQuestions from '../components/FollowUpQuestions';
-import { ShieldAlert, ArrowLeft, Download, MessageSquare, AlertTriangle, CheckCircle, Info, Search, FileText } from 'lucide-react';
+import { ArrowLeft, Download, AlertTriangle, CheckCircle, Info, Search, FileText } from 'lucide-react';
 import './Results.css';
 
 function Results() {
   const location = useLocation();
   const navigate = useNavigate();
-  const [result, setResult] = useState(null);
-
   const data = location.state;
+
+  const [result] = useState(() => (data && data.candidate) ? calculateRisk(data) : null);
 
   useEffect(() => {
     if (!data || !data.candidate) {
       navigate('/analyze');
-      return;
     }
-    
-    // Run risk engine with new structure
-    const res = calculateRisk(data);
-    setResult(res);
   }, [data, navigate]);
 
   if (!result || !data) return null;
 
   const { score, level, reasons, timeline, subScores, evidenceQuality } = result;
-
-  const getScoreColor = () => {
-    if (score >= 60) return 'var(--risk-high)';
-    if (score >= 30) return 'var(--risk-medium)';
-    return 'var(--risk-low)';
-  };
 
   const getScoreClass = () => {
     if (score >= 60) return 'high-risk';
@@ -98,7 +87,7 @@ function Results() {
               {score >= 60 
                 ? "Potential interview-integrity inconsistencies detected."
                 : score >= 30 
-                  ? "Some unusual patterns detected. Review advised."
+                  ? "Some unusual patterns detected. Human review advised."
                   : "No significant integrity risks detected."}
             </p>
           </div>
@@ -207,11 +196,9 @@ function Results() {
           </div>
           
           {/* Follow up Generator */}
-          {score >= 30 && (
-            <div className="glass-panel followup-panel">
-              <FollowUpQuestions candidate={data.candidate} reasons={reasons} />
-            </div>
-          )}
+          <div className="glass-panel followup-panel">
+            <FollowUpQuestions candidate={data.candidate} reasons={reasons} />
+          </div>
         </div>
       </div>
 
@@ -223,7 +210,7 @@ function Results() {
         
         <p className="action-description">
           {score >= 60 
-            ? "Ask 2-3 follow-up technical questions targeting the claimed skills. Conduct a live coding or architecture exercise to verify true depth."
+            ? "Ask 2-3 follow-up technical questions targeting the claimed skills. Conduct an impromptu live coding or architecture exercise to verify true depth."
             : score >= 30 
               ? "Probe slightly deeper on areas of inconsistency. Ensure candidate is explaining concepts in their own words."
               : "Proceed with standard interview evaluation process. No anomalous signals detected."
@@ -236,7 +223,7 @@ function Results() {
         </div>
         
         <div className="action-disclaimer">
-          <Info size={14} /> The system does not make hiring decisions. It surfaces inconsistencies for interviewer verification.
+          <Info size={14} /> The system does not make hiring decisions. It surfaces inconsistencies for human interviewer verification.
         </div>
       </div>
     </div>

@@ -1,36 +1,31 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { AlertOctagon, X } from 'lucide-react';
 import './AlertManager.css';
 
 function AlertManager() {
   const [alerts, setAlerts] = useState([]);
 
+  const dismissAlert = useCallback((id) => {
+    setAlerts((prev) => prev.filter(alert => alert.id !== id));
+  }, []);
+
   useEffect(() => {
-    // Listen for custom alert events
     const handleAlertEvent = (e) => {
       const newAlert = {
-        id: Date.now(),
+        id: Date.now() + Math.random(),
         ...e.detail
       };
       setAlerts((prev) => [...prev, newAlert]);
       
-      // Auto-dismiss after 8 seconds
+      // Auto-dismiss after 7 seconds
       setTimeout(() => {
-        dismissAlert(newAlert.id);
-      }, 8000);
+        setAlerts((current) => current.filter(a => a.id !== newAlert.id));
+      }, 7000);
     };
 
     window.addEventListener('interview-alert', handleAlertEvent);
-    
-    // Simulate one alert for demo purposes on load if we want to show it off
-    // But better to let the user trigger it.
-
     return () => window.removeEventListener('interview-alert', handleAlertEvent);
   }, []);
-
-  const dismissAlert = (id) => {
-    setAlerts((prev) => prev.filter(alert => alert.id !== id));
-  };
 
   if (alerts.length === 0) return null;
 
@@ -43,7 +38,7 @@ function AlertManager() {
               <AlertOctagon size={18} />
               <span>INTERVIEW INTEGRITY ALERT</span>
             </div>
-            <button className="btn-close" onClick={() => dismissAlert(alert.id)}>
+            <button className="btn-close" onClick={() => dismissAlert(alert.id)} aria-label="Dismiss">
               <X size={16} />
             </button>
           </div>
@@ -53,9 +48,11 @@ function AlertManager() {
             {alert.duration && <p className="alert-meta">Duration: {alert.duration} seconds</p>}
             <p className="alert-desc">{alert.description}</p>
             
-            <div className="alert-impact">
-              Risk contribution: <span className="text-danger">+{alert.riskContribution}</span>
-            </div>
+            {alert.riskContribution !== undefined && (
+              <div className="alert-impact">
+                Risk contribution: <span className="text-danger">+{alert.riskContribution}</span>
+              </div>
+            )}
           </div>
         </div>
       ))}

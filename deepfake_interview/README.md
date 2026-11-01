@@ -1,16 +1,52 @@
-# React + Vite
+# VERA - Virtual Interview Risk Analyzer
 
-This template provides a minimal setup to get React working in Vite with HMR and some Oxlint rules.
+VERA is an AI-assisted interview integrity and authenticity verification platform designed to assist interviewers in identifying potential deception, deepfakes, external assistance (prompters, scripted answers, tab switching), and profile-response mismatches during remote virtual interviews.
 
-Currently, two official plugins are available:
+## 🚀 Key Features
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+- **Real-Time Live Monitor**: In-browser computer vision with `@vladmandic/face-api` (expression classification, eye-contact stability) and Web Audio API frequency analysis for lip-sync integrity.
+- **Session Focus Tracking**: Real-time detection of browser tab switching or window blur during virtual interviews.
+- **Dynamic Risk Engine**: 0–100 composite risk score with explainable subscores (Profile Consistency, Technical Depth, Assistance Signals, Session Integrity).
+- **Forensic Investigation Console**: Synchronized video playback with interactive anomaly scrubber and searchable transcript.
+- **Skill Verification Matrix**: Dynamic analysis of claimed vs observed technical competence.
+- **AI Follow-Up Probes**: Targeted questions to verify candidate depth in flagged areas.
+- **Local Persistence**: Browser-local session storage for candidate baselines and interview results.
 
-## React Compiler
+## 🛠 Tech Stack
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+- **Frontend**: React 19, React Router DOM 7
+- **Tooling & Bundler**: Vite 8, Rolldown / Oxc
+- **Computer Vision**: `@vladmandic/face-api`
+- **Audio Processing**: Web Audio API
+- **Icons & Styling**: Lucide React, Glassmorphism CSS design system
+- **Linter**: Oxlint
 
-## Expanding the Oxlint configuration
+## 📦 Getting Started
 
-If you are developing a production application, we recommend using TypeScript with type-aware lint rules enabled. Check out the [TS template](https://github.com/vitejs/vite/tree/main/packages/create-vite/template-react-ts) for information on how to integrate TypeScript and Oxlint's TypeScript related rules in your project.
+### Installation
+
+```bash
+npm install
+```
+
+### Development Server
+
+```bash
+npm run dev
+```
+
+### Production Build
+
+```bash
+npm run build
+```
+
+### Linting
+
+```bash
+npm run lint
+```
+
+## ⚖️ Ethics & Human-in-the-Loop Policy
+
+VERA is strictly an interviewer-assistance tool. It surfaces anomalies and inconsistencies for human verification and does not make automated hiring or rejection decisions.

@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { Bot, Copy, RefreshCw, Check } from 'lucide-react';
 import './FollowUpQuestions.css';
 
-function FollowUpQuestions({ candidate, reasons }) {
+function FollowUpQuestions({ candidate = {}, reasons = [] }) {
   const [isGenerating, setIsGenerating] = useState(false);
   const [questions, setQuestions] = useState([]);
   const [copiedIndex, setCopiedIndex] = useState(-1);
@@ -10,32 +10,39 @@ function FollowUpQuestions({ candidate, reasons }) {
   const generateQuestions = () => {
     setIsGenerating(true);
     
-    // Simulate API delay
+    // Generate context-aware follow-up probes
     setTimeout(() => {
-      let generated = [];
-      const hasTechnicalMismatch = reasons.find(r => r.title.toLowerCase().includes("technical"));
-      const hasScripting = reasons.find(r => r.title.toLowerCase().includes("script"));
-      
+      const generated = [];
+      const primarySkill = (candidate.skills && candidate.skills[0]) ? candidate.skills[0] : 'core technologies';
+      const secondarySkill = (candidate.skills && candidate.skills[1]) ? candidate.skills[1] : 'framework architecture';
+
+      const hasTechnicalMismatch = reasons.some(r => r.title.toLowerCase().includes("technical"));
+      const hasScripting = reasons.some(r => r.title.toLowerCase().includes("script") || r.title.toLowerCase().includes("assistance"));
+      const hasAVAnomaly = reasons.some(r => r.title.toLowerCase().includes("lip-sync") || r.title.toLowerCase().includes("audio-visual"));
+
       if (hasTechnicalMismatch) {
-        generated.push(`Can you explain the difference between ${candidate.skills[0] || 'your core skill'} concepts in your own words, without using definitions?`);
-        generated.push(`In your ${candidate.projects || 'recent project'}, what was the hardest technical challenge and exactly how did you solve it?`);
+        generated.push(`Can you walk me through how you implemented ${primarySkill} in a real-world project, explaining edge cases and trade-offs you encountered?`);
+        generated.push(`If a system using ${secondarySkill} fails under high concurrency or memory pressure, what diagnostic steps would you take first?`);
       }
       
       if (hasScripting) {
-        generated.push(`Could we walk through a live coding or whiteboard exercise regarding your experience with ${candidate.skills[1] || 'this technology'}?`);
+        generated.push(`Let's do an impromptu whiteboard scenario: design a minimal system architecture using ${primarySkill} for an unpredictable workload.`);
+        generated.push(`Can you explain why you chose this specific approach over alternate industry designs, in your own words?`);
+      }
+
+      if (hasAVAnomaly) {
+        generated.push(`Could you briefly recap your last answer regarding your project experience and summarize the main bottlenecks?`);
       }
       
       if (generated.length === 0) {
-        generated = [
-          `Can you describe a situation where you had to quickly learn a new technology?`,
-          `What is the most complex problem you've solved using ${candidate.skills[0] || 'your primary skill'}?`,
-          `How do you stay updated with the latest trends in ${candidate.role}?`
-        ];
+        generated.push(`Can you describe a challenging debugging scenario involving ${primarySkill} and what tools you used to resolve it?`);
+        generated.push(`How do you approach architectural decisions when balancing performance vs maintainability in ${candidate.role || 'your development'}?`);
+        generated.push(`What is a recent technical lesson you learned that changed how you design software?`);
       }
       
       setQuestions(generated);
       setIsGenerating(false);
-    }, 1500);
+    }, 600);
   };
 
   const copyToClipboard = (text, index) => {
@@ -51,7 +58,9 @@ function FollowUpQuestions({ candidate, reasons }) {
         <h3>AI Follow-Up Recommendations</h3>
       </div>
       
-      <p className="questions-desc">Generate targeted questions to verify inconsistencies detected during the interview.</p>
+      <p className="questions-desc">
+        Generate targeted technical probe questions to verify candidate depth in areas of observed inconsistency.
+      </p>
       
       {questions.length === 0 ? (
         <button 
@@ -65,19 +74,20 @@ function FollowUpQuestions({ candidate, reasons }) {
         <div className="questions-list">
           {questions.map((q, i) => (
             <div key={i} className="question-item">
-              <div className="q-number">Q{i+1}</div>
+              <div className="q-number">Q{i + 1}</div>
               <div className="q-text">{q}</div>
               <button 
                 className="btn-icon" 
                 onClick={() => copyToClipboard(q, i)}
                 title="Copy to clipboard"
+                aria-label="Copy to clipboard"
               >
                 {copiedIndex === i ? <Check size={16} color="var(--risk-low)" /> : <Copy size={16} />}
               </button>
             </div>
           ))}
           <button className="btn btn-outline btn-sm mt-3 w-full" onClick={generateQuestions}>
-            <RefreshCw size={14} /> REGENERATE
+            <RefreshCw size={14} /> REGENERATE PROBES
           </button>
         </div>
       )}

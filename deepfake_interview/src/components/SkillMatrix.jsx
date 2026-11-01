@@ -1,39 +1,65 @@
 import { CheckCircle, AlertTriangle, XCircle, HelpCircle } from 'lucide-react';
 import './SkillMatrix.css';
 
-function SkillMatrix({ candidate, transcript }) {
-  // In a real system, an ML NLP service would compute these dynamically.
-  // We simulate it using deterministic logic based on candidate ID and experience level.
-  const generateMockMatrix = () => {
-    const skills = candidate.skills || [];
-    const isWeak = candidate.id === "CAND-2819" || candidate.id === "CAND-5911"; // Skill mismatch cases
-    
-    return skills.map((skill, i) => {
-      let status = "VERIFIED";
-      let observed = "Strong";
-      let confidence = 85 + (i * 2);
-      
-      if (isWeak) {
-        if (i === 0) {
-          status = "NEEDS REVIEW";
-          observed = "Weak";
-          confidence = 47;
-        } else if (i === 1) {
-          status = "NEEDS REVIEW";
-          observed = "Moderate";
-          confidence = 41;
-        } else if (i > 1) {
-          status = "NOT DEMONSTRATED";
-          observed = "None";
-          confidence = 31;
-        }
-      }
-      
-      return { skill, claimed: candidate.experience, observed, confidence, status };
-    });
-  };
+function SkillMatrix({ candidate = {}, transcript = [] }) {
+  const skills = Array.isArray(candidate.skills) ? candidate.skills : [];
 
-  const matrixData = generateMockMatrix();
+  // Extract all text spoken by candidate
+  const candidateText = Array.isArray(transcript)
+    ? transcript
+        .filter(t => t.speaker === 'CANDIDATE')
+        .map(t => t.text || '')
+        .join(' ')
+        .toLowerCase()
+    : '';
+
+  const matrixData = skills.map((skill) => {
+    const cleanSkill = skill.trim();
+    const skillLower = cleanSkill.toLowerCase();
+    
+    // Check if the skill name or its parts are present in candidate answers
+    const directMention = skillLower.length > 0 && candidateText.includes(skillLower);
+    
+    // Check keywords related to common skills if direct name isn't verbatim
+    let status = "NOT DEMONSTRATED";
+    let observed = "None";
+    let confidence = 35;
+
+    if (directMention) {
+      // Find how much candidate spoke around this skill
+      const sentences = candidateText.split(/[.?!]/).filter(s => s.includes(skillLower));
+      const wordCount = sentences.join(' ').split(/\s+/).filter(Boolean).length;
+
+      if (wordCount >= 20) {
+        status = "VERIFIED";
+        observed = "Strong";
+        confidence = Math.min(98, 80 + Math.min(18, wordCount));
+      } else {
+        status = "NEEDS REVIEW";
+        observed = "Moderate";
+        confidence = 65;
+      }
+    } else {
+      // If candidate text is substantial (> 100 words) but never mentioned this skill
+      if (candidateText.length > 100) {
+        status = "NOT DEMONSTRATED";
+        observed = "None";
+        confidence = 75;
+      } else {
+        status = "NOT DEMONSTRATED";
+        observed = "Insufficient Data";
+        confidence = 45;
+      }
+    }
+
+    return {
+      skill: cleanSkill,
+      claimed: candidate.experience || 'Not specified',
+      observed,
+      confidence,
+      status
+    };
+  });
 
   const getStatusIcon = (status) => {
     switch (status) {
@@ -81,7 +107,9 @@ function SkillMatrix({ candidate, transcript }) {
             ))}
             {matrixData.length === 0 && (
               <tr>
-                <td colSpan="5" className="text-center py-4 text-muted">No specific skills listed for verification.</td>
+                <td colSpan="5" className="text-center py-4 text-muted">
+                  No specific skills listed for verification.
+                </td>
               </tr>
             )}
           </tbody>

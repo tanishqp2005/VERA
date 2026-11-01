@@ -1,5 +1,5 @@
 import { Link, useLocation } from 'react-router-dom';
-import { ShieldCheck, Activity } from 'lucide-react';
+import { ShieldCheck } from 'lucide-react';
 import './Navbar.css';
 
 function Navbar() {
@@ -18,8 +18,8 @@ function Navbar() {
         
         <div className="navbar-links">
           <Link to="/" className={location.pathname === '/' ? 'active' : ''}>Dashboard</Link>
-          <Link to="/analyze" className={location.pathname === '/analyze' ? 'active' : ''}>Analyze</Link>
-          <Link to="/test-cases" className={location.pathname === '/test-cases' ? 'active' : ''}>Test Cases</Link>
+          <Link to="/live" className={location.pathname === '/live' ? 'active' : ''}>Live Monitor</Link>
+          <Link to="/analyze" className={location.pathname === '/analyze' ? 'active' : ''}>Analyze Video</Link>
           <Link to="/about" className={location.pathname === '/about' ? 'active' : ''}>How It Works</Link>
         </div>
         
